@@ -10,7 +10,11 @@
     <div class="container">
         <div class="header">
             <h3>Jira Time Tracker</h3>
-            <button id="closeBtn" class="close-btn">&times;</button>
+            <div class="header-buttons">
+                <button id="settingsBtn" class="header-btn" title="Settings">⚙</button>
+                <button id="syncBtn" class="header-btn" title="Sync Jira Tickets">🔄</button>
+                <button id="closeBtn" class="close-btn">&times;</button>
+            </div>
         </div>
         
         <div class="ticket-section">
@@ -32,6 +36,38 @@
                 <button id="startBtn" class="btn-start">Start</button>
                 <button id="stopBtn" class="btn-stop" disabled>Stop</button>
                 <button id="resetBtn" class="btn-reset">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Jira Settings</h4>
+                <button id="closeSettings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="jiraUrl">Jira URL:</label>
+                    <input type="text" id="jiraUrl" placeholder="https://yourcompany.atlassian.net" value="https://frontlinetechnologies.atlassian.net">
+                </div>
+                <div class="form-group">
+                    <label for="jiraEmail">Email:</label>
+                    <input type="email" id="jiraEmail" placeholder="your.email@company.com">
+                </div>
+                <div class="form-group">
+                    <label for="jiraToken">API Token:</label>
+                    <input type="password" id="jiraToken" placeholder="Your Jira API Token">
+                </div>
+                <div class="form-group">
+                    <label for="jiraProjects">Projects (comma-separated):</label>
+                    <input type="text" id="jiraProjects" placeholder="PROJ1,PROJ2" value="HCMRH,HR">
+                </div>
+                <div class="modal-buttons">
+                    <button id="saveSettings" class="btn-save">Save</button>
+                    <button id="testConnection" class="btn-test">Test Connection</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
+const axios = require('axios');
 
 const store = new Store();
 
@@ -148,4 +149,99 @@ ipcMain.handle('save-session', (event, session) => {
 // Close window handler
 ipcMain.handle('close-window', () => {
   app.quit();
+});
+
+// Jira Integration Handlers
+ipcMain.handle('save-jira-settings', (event, settings) => {
+  store.set('jiraSettings', settings);
+  console.log('Saved Jira settings');
+});
+
+ipcMain.handle('load-jira-settings', () => {
+  return store.get('jiraSettings', {});
+});
+
+ipcMain.handle('test-jira-connection', async (event, settings) => {
+  try {
+    const auth = Buffer.from(`${settings.email}:${settings.token}`).toString('base64');
+    
+    const response = await axios.get(`${settings.url}/rest/api/2/myself`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      },
+      timeout: 10000
+    });
+    
+    return { success: true, user: response.data.displayName };
+  } catch (error) {
+    console.error('Jira connection test failed:', error.message);
+    return { 
+      success: false, 
+      error: error.response?.data?.errorMessages?.[0] || error.message 
+    };
+  }
+});
+
+ipcMain.handle('sync-jira-tickets', async (event, settings) => {
+  try {
+    const auth = Buffer.from(`${settings.email}:${settings.token}`).toString('base64');
+    
+    // Build JQL query for assigned tickets in specified projects that are "In Progress"
+    const projects = settings.projects.split(',').map(p => p.trim()).filter(p => p);
+    const projectFilter = projects.length > 0 ? `project in (${projects.join(',')}) AND ` : '';
+    const jql = `${projectFilter}assignee = currentuser() AND status = "In Progress" ORDER BY updated DESC`;
+    
+    console.log('Executing JQL:', jql);
+    
+    const response = await axios.get(`${settings.url}/rest/api/2/search`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      },
+      params: {
+        jql: jql,
+        fields: 'key,summary,status',
+        maxResults: 50
+      },
+      timeout: 15000
+    });
+    
+    const tickets = response.data.issues.map(issue => ({
+      key: issue.key,
+      summary: issue.fields.summary,
+      status: issue.fields.status.name
+    }));
+    
+    console.log(`Found ${tickets.length} tickets`);
+    return { success: true, tickets };
+    
+  } catch (error) {
+    console.error('Jira sync failed:', error.message);
+    return { 
+      success: false, 
+      error: error.response?.data?.errorMessages?.[0] || error.message 
+    };
+  }
+});
+
+ipcMain.handle('replace-tickets', (event, newTickets) => {
+  // Get existing data or create new object
+  let data = store.get('timerData') || {};
+  console.log('Replacing tickets, current data:', data);
+  
+  // Replace the tickets array entirely
+  data.tickets = newTickets;
+  
+  // If the current ticket is not in the new list, clear it
+  if (data.currentTicket && !newTickets.includes(data.currentTicket)) {
+    data.currentTicket = null;
+    data.isRunning = false;
+  }
+  
+  // Save the updated data
+  store.set('timerData', data);
+  
+  console.log('After replacing, stored data:', data);
+  return data.tickets;
 });

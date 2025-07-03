@@ -11,6 +11,7 @@ class TimeTracker {
         
         this.initializeElements();
         this.loadData();
+        this.loadJiraSettings();
         this.bindEvents();
         this.updateDisplay();
     }
@@ -25,6 +26,14 @@ class TimeTracker {
         this.stopBtn = document.getElementById('stopBtn');
         this.resetBtn = document.getElementById('resetBtn');
         this.notification = document.getElementById('notification');
+        
+        // Jira elements
+        this.settingsBtn = document.getElementById('settingsBtn');
+        this.syncBtn = document.getElementById('syncBtn');
+        this.settingsModal = document.getElementById('settingsModal');
+        this.closeSettings = document.getElementById('closeSettings');
+        this.saveSettings = document.getElementById('saveSettings');
+        this.testConnection = document.getElementById('testConnection');
         
         console.log('addTicketBtn element:', this.addTicketBtn);
         console.log('ticketInput element:', this.ticketInput);
@@ -46,6 +55,20 @@ class TimeTracker {
             }
         } catch (error) {
             console.error('Error loading data:', error);
+        }
+    }
+    
+    async loadJiraSettings() {
+        try {
+            this.jiraSettings = await window.electronAPI.loadJiraSettings();
+            console.log('Loaded Jira settings (without token):', { 
+                url: this.jiraSettings.url, 
+                email: this.jiraSettings.email,
+                projects: this.jiraSettings.projects 
+            });
+        } catch (error) {
+            console.error('Error loading Jira settings:', error);
+            this.jiraSettings = {};
         }
     }
     
@@ -113,6 +136,20 @@ class TimeTracker {
         this.startBtn.addEventListener('click', () => this.startTimer());
         this.stopBtn.addEventListener('click', () => this.stopTimer());
         this.resetBtn.addEventListener('click', () => this.resetTimer());
+        
+        // Jira integration event listeners
+        this.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.syncBtn.addEventListener('click', () => this.syncJiraTickets());
+        this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
+        this.saveSettings.addEventListener('click', () => this.saveJiraSettings());
+        this.testConnection.addEventListener('click', () => this.testJiraConnection());
+        
+        // Close modal when clicking outside
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) {
+                this.closeSettingsModal();
+            }
+        });
     }
     
     async addTicket() {
@@ -253,6 +290,127 @@ class TimeTracker {
         this.notificationTimeout = setTimeout(() => {
             this.notification.className = 'notification hidden';
         }, duration);
+    }
+    
+    // Jira Integration Methods
+    async openSettings() {
+        try {
+            const settings = await window.electronAPI.loadJiraSettings();
+            
+            // Pre-fill the form with saved settings
+            document.getElementById('jiraUrl').value = settings.url || 'https://frontlinetechnologies.atlassian.net';
+            document.getElementById('jiraEmail').value = settings.email || '';
+            document.getElementById('jiraToken').value = settings.token || '';
+            document.getElementById('jiraProjects').value = settings.projects || 'HCMRH,HR';
+            
+            this.settingsModal.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading Jira settings:', error);
+            this.settingsModal.classList.remove('hidden');
+        }
+    }
+    
+    closeSettingsModal() {
+        this.settingsModal.classList.add('hidden');
+    }
+    
+    async saveJiraSettings() {
+        const settings = {
+            url: document.getElementById('jiraUrl').value.trim(),
+            email: document.getElementById('jiraEmail').value.trim(),
+            token: document.getElementById('jiraToken').value.trim(),
+            projects: document.getElementById('jiraProjects').value.trim()
+        };
+        
+        if (!settings.url || !settings.email || !settings.token) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        try {
+            await window.electronAPI.saveJiraSettings(settings);
+            this.showNotification('Settings saved successfully!', 'success');
+            this.closeSettingsModal();
+        } catch (error) {
+            console.error('Error saving Jira settings:', error);
+            this.showNotification('Error saving settings', 'error');
+        }
+    }
+    
+    async testJiraConnection() {
+        const settings = {
+            url: document.getElementById('jiraUrl').value.trim(),
+            email: document.getElementById('jiraEmail').value.trim(),
+            token: document.getElementById('jiraToken').value.trim(),
+            projects: document.getElementById('jiraProjects').value.trim()
+        };
+        
+        if (!settings.url || !settings.email || !settings.token) {
+            this.showNotification('Please fill in all fields to test connection', 'error');
+            return;
+        }
+        
+        this.testConnection.textContent = 'Testing...';
+        this.testConnection.disabled = true;
+        
+        try {
+            const result = await window.electronAPI.testJiraConnection(settings);
+            
+            if (result.success) {
+                this.showNotification(`Connection successful! Hello, ${result.user}`, 'success');
+            } else {
+                this.showNotification(`Connection failed: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error testing Jira connection:', error);
+            this.showNotification('Error testing connection', 'error');
+        } finally {
+            this.testConnection.textContent = 'Test Connection';
+            this.testConnection.disabled = false;
+        }
+    }
+    
+    async syncJiraTickets() {
+        try {
+            const settings = await window.electronAPI.loadJiraSettings();
+            
+            if (!settings.url || !settings.email || !settings.token) {
+                this.showNotification('Please configure Jira settings first', 'error');
+                return;
+            }
+            
+            this.syncBtn.classList.add('syncing');
+            this.showNotification('Syncing tickets from Jira...', 'warning', 1000);
+            
+            const result = await window.electronAPI.syncJiraTickets(settings);
+            
+            if (result.success) {
+                // Replace all tickets with the synced tickets from Jira
+                const ticketKeys = result.tickets.map(ticket => ticket.key);
+                const updatedTickets = await window.electronAPI.replaceTickets(ticketKeys);
+                
+                // Refresh the dropdown
+                this.populateTicketSelect(updatedTickets);
+                
+                // Check if current ticket is still valid
+                if (this.currentTicket && !ticketKeys.includes(this.currentTicket)) {
+                    this.currentTicket = null;
+                    this.ticketSelect.value = '';
+                    this.saveData();
+                    this.showNotification('Current ticket was cleared (no longer in progress)', 'warning');
+                }
+                
+                this.showNotification(`Synced ${result.tickets.length} tickets from Jira!`, 'success');
+                console.log('Synced tickets:', result.tickets);
+            } else {
+                this.showNotification(`Sync failed: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error syncing Jira tickets:', error);
+            this.showNotification('Error syncing tickets', 'error');
+        } finally {
+            this.syncBtn.classList.remove('syncing');
+        }
     }
 }
 
