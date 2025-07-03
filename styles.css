@@ -111,12 +111,6 @@ body {
     margin-bottom: 10px;
 }
 
-.ticket-input-group {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 6px;
-}
-
 .notification {
     background: rgba(255, 193, 7, 0.9);
     color: #333;
@@ -145,41 +139,6 @@ body {
 .notification.success {
     background: rgba(76, 175, 80, 0.9);
     color: white;
-}
-
-#ticketInput {
-    flex: 1;
-    padding: 4px 6px;
-    border: none;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.9);
-    font-size: 11px;
-    color: #333;
-}
-
-#ticketInput:focus {
-    outline: 2px solid #4CAF50;
-    background: white;
-}
-
-#addTicketBtn {
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: 3px;
-    background: #4CAF50;
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-app-region: no-drag;
-}
-
-#addTicketBtn:hover {
-    background: #45a049;
 }
 
 #ticketSelect {

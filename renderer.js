@@ -18,8 +18,6 @@ class TimeTracker {
     
     initializeElements() {
         console.log('Initializing elements...');
-        this.ticketInput = document.getElementById('ticketInput');
-        this.addTicketBtn = document.getElementById('addTicketBtn');
         this.ticketSelect = document.getElementById('ticketSelect');
         this.timerDisplay = document.getElementById('timerDisplay');
         this.startBtn = document.getElementById('startBtn');
@@ -35,8 +33,6 @@ class TimeTracker {
         this.saveSettings = document.getElementById('saveSettings');
         this.testConnection = document.getElementById('testConnection');
         
-        console.log('addTicketBtn element:', this.addTicketBtn);
-        console.log('ticketInput element:', this.ticketInput);
         console.log('notification element:', this.notification);
     }
     
@@ -129,16 +125,6 @@ class TimeTracker {
             window.electronAPI.closeWindow();
         });
         
-        this.addTicketBtn.addEventListener('click', () => {
-            console.log('Add ticket button clicked');
-            this.addTicket();
-        });
-        this.ticketInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addTicket();
-            }
-        });
-        
         this.ticketSelect.addEventListener('change', async () => {
             // Save current ticket time before switching
             if (this.isRunning && this.currentTicket) {
@@ -169,66 +155,6 @@ class TimeTracker {
         });
     }
     
-    async addTicket() {
-        console.log('addTicket called');
-        const ticketValue = this.ticketInput.value.trim().toUpperCase();
-        console.log('Ticket value:', ticketValue);
-        
-        if (!ticketValue) {
-            this.showNotification('Please enter a ticket number', 'error');
-            return;
-        }
-        
-        // Basic Jira ticket format validation
-        const jiraPattern = /^[A-Z]+-\d+$/;
-        if (!jiraPattern.test(ticketValue)) {
-            this.showNotification('Please use format: ABC-123', 'error');
-            return;
-        }
-        
-        try {
-            console.log('Checking existing tickets...');
-            // Check if ticket already exists
-            const existingTickets = await window.electronAPI.getTickets();
-            console.log('Existing tickets:', existingTickets);
-            
-            // Ensure existingTickets is an array
-            const ticketsArray = Array.isArray(existingTickets) ? existingTickets : [];
-            
-            if (ticketsArray.includes(ticketValue)) {
-                console.log('Ticket already exists');
-                this.showNotification('Ticket already exists - selected it for you', 'warning');
-                this.ticketSelect.value = ticketValue;
-                this.currentTicket = ticketValue;
-                this.ticketInput.value = '';
-                return;
-            }
-            
-            console.log('Adding new ticket...');
-            // Add new ticket
-            const updatedTickets = await window.electronAPI.addTicket(ticketValue);
-            console.log('Updated tickets:', updatedTickets);
-            
-            // Initialize time for the new ticket
-            this.ticketTimes[ticketValue] = 0;
-            
-            this.populateTicketSelect(updatedTickets);
-            
-            // Select the newly added ticket
-            this.ticketSelect.value = ticketValue;
-            this.currentTicket = ticketValue;
-            this.ticketInput.value = '';
-            
-            console.log('Ticket added successfully');
-            this.showNotification(`${ticketValue} added successfully!`, 'success', 2000);
-            this.updateDisplay();
-            this.saveData();
-            
-        } catch (error) {
-            console.error('Error adding ticket:', error);
-            this.showNotification('Error adding ticket', 'error');
-        }
-    }
     
     startTimer() {
         if (!this.currentTicket) {
