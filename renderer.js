@@ -376,8 +376,8 @@ class TimeTracker {
                 return;
             }
             
+            this.syncBtn.textContent = '⏳';
             this.syncBtn.classList.add('syncing');
-            this.showNotification('Syncing tickets from Jira...', 'warning', 1000);
             
             const result = await window.electronAPI.syncJiraTickets(settings);
             
@@ -402,19 +402,39 @@ class TimeTracker {
                     this.ticketSelect.value = '';
                     this.updateDisplay();
                     this.saveData();
-                    this.showNotification('Current ticket was cleared (no longer in progress)', 'warning');
                 }
                 
-                this.showNotification(`Synced ${result.tickets.length} tickets from Jira!`, 'success');
+                // Show success icon briefly
+                this.syncBtn.textContent = '✅';
+                this.syncBtn.classList.remove('syncing');
+                this.syncBtn.classList.add('success');
+                setTimeout(() => {
+                    this.syncBtn.textContent = '🔄';
+                    this.syncBtn.classList.remove('success');
+                }, 2000);
+                
                 console.log('Synced tickets:', result.tickets);
             } else {
+                // Show error icon briefly
+                this.syncBtn.textContent = '❌';
+                this.syncBtn.classList.remove('syncing');
+                this.syncBtn.classList.add('error');
+                setTimeout(() => {
+                    this.syncBtn.textContent = '🔄';
+                    this.syncBtn.classList.remove('error');
+                }, 3000);
                 this.showNotification(`Sync failed: ${result.error}`, 'error');
             }
         } catch (error) {
             console.error('Error syncing Jira tickets:', error);
-            this.showNotification('Error syncing tickets', 'error');
-        } finally {
+            this.syncBtn.textContent = '❌';
             this.syncBtn.classList.remove('syncing');
+            this.syncBtn.classList.add('error');
+            setTimeout(() => {
+                this.syncBtn.textContent = '🔄';
+                this.syncBtn.classList.remove('error');
+            }, 3000);
+            this.showNotification('Error syncing tickets', 'error');
         }
     }
 }
