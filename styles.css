@@ -1,0 +1,252 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    user-select: none;
+    overflow: hidden;
+}
+
+.container {
+    padding: 8px;
+    height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    -webkit-app-region: drag; /* Makes the header draggable */
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.close-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.drag-handle {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle::before {
+    content: "⋮⋮";
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ticket-section {
+    margin-bottom: 10px;
+}
+
+.ticket-input-group {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.notification {
+    background: rgba(255, 193, 7, 0.9);
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-bottom: 4px;
+    text-align: center;
+    transition: all 0.3s ease;
+    max-height: 30px;
+    overflow: hidden;
+}
+
+.notification.hidden {
+    max-height: 0;
+    padding: 0 8px;
+    margin-bottom: 0;
+    opacity: 0;
+}
+
+.notification.error {
+    background: rgba(244, 67, 54, 0.9);
+    color: white;
+}
+
+.notification.success {
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+}
+
+#ticketInput {
+    flex: 1;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+    color: #333;
+}
+
+#ticketInput:focus {
+    outline: 2px solid #4CAF50;
+    background: white;
+}
+
+#addTicketBtn {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 3px;
+    background: #4CAF50;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+}
+
+#addTicketBtn:hover {
+    background: #45a049;
+}
+
+#ticketSelect {
+    width: 100%;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+    color: #333;
+    -webkit-app-region: no-drag;
+}
+
+#ticketSelect:focus {
+    outline: 2px solid #4CAF50;
+    background: white;
+}
+
+.timer-section {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.timer-display {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.timer-controls button {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 40px;
+    -webkit-app-region: no-drag;
+    transition: all 0.2s ease;
+}
+
+.btn-start {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-start:hover:not(:disabled) {
+    background: #45a049;
+    transform: translateY(-1px);
+}
+
+.btn-stop {
+    background: #f44336;
+    color: white;
+}
+
+.btn-stop:hover:not(:disabled) {
+    background: #da190b;
+    transform: translateY(-1px);
+}
+
+.btn-reset {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-reset:hover:not(:disabled) {
+    background: #e68900;
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Scrollbar styling for select dropdown */
+select::-webkit-scrollbar {
+    width: 6px;
+}
+
+select::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+select::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

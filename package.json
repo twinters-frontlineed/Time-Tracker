@@ -1,0 +1,39 @@
+{
+  "name": "jira-time-tracker",
+  "version": "1.0.0",
+  "description": "A simple overlay time tracker for Jira tickets",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "jira",
+    "time-tracker",
+    "overlay",
+    "electron"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "build": {
+    "appId": "com.yourcompany.jira-time-tracker",
+    "productName": "Jira Time Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer.js",
+      "styles.css",
+      "index.html"
+    ]
+  }
+}

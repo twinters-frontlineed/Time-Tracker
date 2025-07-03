@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Time Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h3>Jira Time Tracker</h3>
+            <button id="closeBtn" class="close-btn">&times;</button>
+        </div>
+        
+        <div class="ticket-section">
+            <div class="ticket-input-group">
+                <input type="text" id="ticketInput" placeholder="Enter Jira ticket (e.g., ABC-123)" maxlength="20">
+                <button id="addTicketBtn">+</button>
+            </div>
+            
+            <div id="notification" class="notification hidden"></div>
+            
+            <select id="ticketSelect">
+                <option value="">Select a ticket...</option>
+            </select>
+        </div>
+        
+        <div class="timer-section">
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="timer-controls">
+                <button id="startBtn" class="btn-start">Start</button>
+                <button id="stopBtn" class="btn-stop" disabled>Stop</button>
+                <button id="resetBtn" class="btn-reset">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="renderer.js"></script>
+</body>
+</html>
