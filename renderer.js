@@ -4,7 +4,7 @@ class TimeTracker {
     constructor() {
         console.log('TimeTracker constructor called');
         this.startTime = null;
-        this.elapsedTime = 0;
+        this.ticketTimes = {}; // Store elapsed time per ticket
         this.isRunning = false;
         this.timerInterval = null;
         this.currentTicket = null;
@@ -47,12 +47,22 @@ class TimeTracker {
             const data = await window.electronAPI.loadData();
             console.log('Loaded data:', data);
             this.populateTicketSelect(data.tickets || []);
+            this.ticketTimes = data.ticketTimes || {};
+            this.startTime = data.startTime;
+            this.isRunning = data.isRunning || false;
             
             // Restore current ticket selection if exists
             if (data.currentTicket) {
                 this.ticketSelect.value = data.currentTicket;
                 this.currentTicket = data.currentTicket;
             }
+            
+            // If timer was running, restart it
+            if (this.isRunning && this.currentTicket && this.startTime) {
+                this.resumeTimer();
+            }
+            
+            this.updateDisplay();
         } catch (error) {
             console.error('Error loading data:', error);
         }
@@ -77,7 +87,8 @@ class TimeTracker {
             const data = {
                 currentTicket: this.currentTicket,
                 isRunning: this.isRunning,
-                elapsedTime: this.elapsedTime
+                startTime: this.startTime,
+                ticketTimes: this.ticketTimes
             };
             await window.electronAPI.saveData(data);
         } catch (error) {
@@ -128,8 +139,14 @@ class TimeTracker {
             }
         });
         
-        this.ticketSelect.addEventListener('change', () => {
+        this.ticketSelect.addEventListener('change', async () => {
+            // Save current ticket time before switching
+            if (this.isRunning && this.currentTicket) {
+                await this.updateCurrentTicketTime();
+            }
+            
             this.currentTicket = this.ticketSelect.value;
+            this.updateDisplay();
             this.saveData();
         });
         
@@ -192,6 +209,9 @@ class TimeTracker {
             const updatedTickets = await window.electronAPI.addTicket(ticketValue);
             console.log('Updated tickets:', updatedTickets);
             
+            // Initialize time for the new ticket
+            this.ticketTimes[ticketValue] = 0;
+            
             this.populateTicketSelect(updatedTickets);
             
             // Select the newly added ticket
@@ -201,6 +221,7 @@ class TimeTracker {
             
             console.log('Ticket added successfully');
             this.showNotification(`${ticketValue} added successfully!`, 'success', 2000);
+            this.updateDisplay();
             this.saveData();
             
         } catch (error) {
@@ -217,11 +238,16 @@ class TimeTracker {
         
         if (this.isRunning) return;
         
-        this.startTime = Date.now() - this.elapsedTime;
+        // Initialize ticket time if it doesn't exist
+        if (!this.ticketTimes[this.currentTicket]) {
+            this.ticketTimes[this.currentTicket] = 0;
+        }
+        
+        this.startTime = Date.now();
         this.isRunning = true;
         
-        this.timerInterval = setInterval(() => {
-            this.elapsedTime = Date.now() - this.startTime;
+        this.timerInterval = setInterval(async () => {
+            await this.updateCurrentTicketTime();
             this.updateDisplay();
         }, 1000);
         
@@ -230,8 +256,38 @@ class TimeTracker {
         this.saveData();
     }
     
+    async updateCurrentTicketTime() {
+        if (this.isRunning && this.currentTicket && this.startTime) {
+            const currentTime = Date.now();
+            const sessionTime = currentTime - this.startTime;
+            this.ticketTimes[this.currentTicket] = (this.ticketTimes[this.currentTicket] || 0) + sessionTime;
+            this.startTime = currentTime; // Reset start time for next interval
+            
+            // Update backend
+            await window.electronAPI.updateTicketTime(this.currentTicket, this.ticketTimes[this.currentTicket]);
+        }
+    }
+    
+    resumeTimer() {
+        if (!this.currentTicket || this.isRunning) return;
+        
+        this.startTime = Date.now();
+        this.isRunning = true;
+        
+        this.timerInterval = setInterval(async () => {
+            await this.updateCurrentTicketTime();
+            this.updateDisplay();
+        }, 1000);
+        
+        this.startBtn.disabled = true;
+        this.stopBtn.disabled = false;
+    }
+    
     async stopTimer() {
         if (!this.isRunning) return;
+        
+        // Update the current ticket time one final time
+        await this.updateCurrentTicketTime();
         
         this.isRunning = false;
         clearInterval(this.timerInterval);
@@ -241,7 +297,7 @@ class TimeTracker {
             ticket: this.currentTicket,
             startTime: this.startTime,
             endTime: Date.now(),
-            duration: this.elapsedTime,
+            duration: this.ticketTimes[this.currentTicket] || 0,
             date: new Date().toISOString().split('T')[0] // YYYY-MM-DD format
         };
         
@@ -256,19 +312,34 @@ class TimeTracker {
         this.saveData();
     }
     
-    resetTimer() {
+    async resetTimer() {
         if (this.isRunning) {
-            this.stopTimer();
+            await this.stopTimer();
         }
         
-        this.elapsedTime = 0;
+        if (this.currentTicket) {
+            this.ticketTimes[this.currentTicket] = 0;
+            await window.electronAPI.updateTicketTime(this.currentTicket, 0);
+        }
+        
         this.startTime = null;
         this.updateDisplay();
         this.saveData();
     }
     
     updateDisplay() {
-        const totalSeconds = Math.floor(this.elapsedTime / 1000);
+        let displayTime = 0;
+        
+        if (this.currentTicket) {
+            displayTime = this.ticketTimes[this.currentTicket] || 0;
+            
+            // If timer is running, add the current session time
+            if (this.isRunning && this.startTime) {
+                displayTime += Date.now() - this.startTime;
+            }
+        }
+        
+        const totalSeconds = Math.floor(displayTime / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
@@ -389,6 +460,13 @@ class TimeTracker {
                 const ticketKeys = result.tickets.map(ticket => ticket.key);
                 const updatedTickets = await window.electronAPI.replaceTickets(ticketKeys);
                 
+                // Initialize times for new tickets that don't have times yet
+                for (const ticketKey of ticketKeys) {
+                    if (!this.ticketTimes[ticketKey]) {
+                        this.ticketTimes[ticketKey] = 0;
+                    }
+                }
+                
                 // Refresh the dropdown
                 this.populateTicketSelect(updatedTickets);
                 
@@ -396,6 +474,7 @@ class TimeTracker {
                 if (this.currentTicket && !ticketKeys.includes(this.currentTicket)) {
                     this.currentTicket = null;
                     this.ticketSelect.value = '';
+                    this.updateDisplay();
                     this.saveData();
                     this.showNotification('Current ticket was cleared (no longer in progress)', 'warning');
                 }

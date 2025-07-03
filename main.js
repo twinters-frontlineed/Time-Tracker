@@ -81,14 +81,15 @@ app.on('activate', () => {
 
 // IPC handlers for timer functionality
 ipcMain.handle('save-data', (event, data) => {
-  // Get existing stored data to preserve tickets
+  // Get existing stored data to preserve tickets and ticket times
   const existingData = store.get('timerData') || {};
   
-  // Merge the new data with existing data, preserving tickets
+  // Merge the new data with existing data, preserving tickets and ticketTimes
   const mergedData = {
     ...existingData,
     ...data,
-    tickets: existingData.tickets || [] // Always preserve existing tickets
+    tickets: existingData.tickets || [], // Always preserve existing tickets
+    ticketTimes: { ...(existingData.ticketTimes || {}), ...(data.ticketTimes || {}) } // Merge ticket times
   };
   
   console.log('Saving data, merged:', mergedData);
@@ -99,9 +100,11 @@ ipcMain.handle('load-data', () => {
   const data = store.get('timerData') || {};
   const result = {
     tickets: data.tickets || [],
+    ticketTimes: data.ticketTimes || {}, // Object to store time per ticket
     sessions: data.sessions || [],
     currentTicket: data.currentTicket || null,
-    isRunning: data.isRunning || false
+    isRunning: data.isRunning || false,
+    startTime: data.startTime || null
   };
   console.log('Loading data, returning:', result);
   return result;
@@ -125,8 +128,18 @@ ipcMain.handle('add-ticket', (event, ticket) => {
     data.tickets = [];
   }
   
+  // Ensure ticketTimes object exists
+  if (!data.ticketTimes || typeof data.ticketTimes !== 'object') {
+    data.ticketTimes = {};
+  }
+  
   // Add the new ticket
   data.tickets.push(ticket);
+  
+  // Initialize time for the new ticket if it doesn't exist
+  if (!data.ticketTimes[ticket]) {
+    data.ticketTimes[ticket] = 0;
+  }
   
   // Save the updated data
   store.set('timerData', data);
@@ -230,13 +243,27 @@ ipcMain.handle('replace-tickets', (event, newTickets) => {
   let data = store.get('timerData') || {};
   console.log('Replacing tickets, current data:', data);
   
+  // Preserve ticket times for tickets that still exist
+  const existingTicketTimes = data.ticketTimes || {};
+  const newTicketTimes = {};
+  
+  newTickets.forEach(ticket => {
+    if (existingTicketTimes[ticket]) {
+      newTicketTimes[ticket] = existingTicketTimes[ticket];
+    } else {
+      newTicketTimes[ticket] = 0; // Initialize new tickets with 0 time
+    }
+  });
+  
   // Replace the tickets array entirely
   data.tickets = newTickets;
+  data.ticketTimes = newTicketTimes;
   
   // If the current ticket is not in the new list, clear it
   if (data.currentTicket && !newTickets.includes(data.currentTicket)) {
     data.currentTicket = null;
     data.isRunning = false;
+    data.startTime = null;
   }
   
   // Save the updated data
@@ -244,4 +271,18 @@ ipcMain.handle('replace-tickets', (event, newTickets) => {
   
   console.log('After replacing, stored data:', data);
   return data.tickets;
+});
+
+ipcMain.handle('get-ticket-time', (event, ticket) => {
+  const data = store.get('timerData') || {};
+  const ticketTimes = data.ticketTimes || {};
+  return ticketTimes[ticket] || 0;
+});
+
+ipcMain.handle('update-ticket-time', (event, ticket, time) => {
+  let data = store.get('timerData') || {};
+  if (!data.ticketTimes) data.ticketTimes = {};
+  data.ticketTimes[ticket] = time;
+  store.set('timerData', data);
+  return data.ticketTimes[ticket];
 });

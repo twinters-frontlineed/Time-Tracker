@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTickets: () => ipcRenderer.invoke('get-tickets'),
   addTicket: (ticket) => ipcRenderer.invoke('add-ticket', ticket),
   replaceTickets: (tickets) => ipcRenderer.invoke('replace-tickets', tickets),
+  getTicketTime: (ticket) => ipcRenderer.invoke('get-ticket-time', ticket),
+  updateTicketTime: (ticket, time) => ipcRenderer.invoke('update-ticket-time', ticket, time),
   saveSession: (session) => ipcRenderer.invoke('save-session', session),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   
