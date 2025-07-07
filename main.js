@@ -26,10 +26,11 @@ function createWindow() {
   // Load the app
   mainWindow.loadFile('index.html');
 
-  // Restore window position if saved
+  // Restore window position if saved, but validate it's on a visible display
   const windowBounds = store.get('windowBounds');
   if (windowBounds) {
-    mainWindow.setBounds(windowBounds);
+    const validBounds = validateWindowBounds(windowBounds);
+    mainWindow.setBounds(validBounds);
   }
 
   // Save window position when moved or resized
