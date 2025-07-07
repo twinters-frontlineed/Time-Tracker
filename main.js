@@ -11,7 +11,7 @@ function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 280,
-    height: 140,
+    height: 160,
     frame: false, // Remove window frame for overlay effect
     alwaysOnTop: true, // Keep window on top
     resizable: true,

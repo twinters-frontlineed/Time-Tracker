@@ -175,20 +175,24 @@ body {
 
 .timer-controls {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     justify-content: center;
 }
 
 .timer-controls button {
-    padding: 4px 8px;
+    width: 32px;
+    height: 32px;
     border: none;
-    border-radius: 3px;
-    font-size: 10px;
+    border-radius: 4px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    min-width: 40px;
     -webkit-app-region: no-drag;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-start {
@@ -199,6 +203,7 @@ body {
 .btn-start:hover:not(:disabled) {
     background: #45a049;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .btn-stop {
@@ -209,6 +214,7 @@ body {
 .btn-stop:hover:not(:disabled) {
     background: #da190b;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .btn-reset {
@@ -219,12 +225,14 @@ body {
 .btn-reset:hover:not(:disabled) {
     background: #e68900;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Scrollbar styling for select dropdown */
