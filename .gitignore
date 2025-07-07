@@ -88,3 +88,4 @@ Thumbs.db
 
 # Electron build outputs
 out/
+node_modules/
