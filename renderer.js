@@ -9,6 +9,10 @@ class TimeTracker {
         this.timerInterval = null;
         this.currentTicket = null;
         
+        // Window size tracking for dynamic resizing
+        this.originalWindowSize = null;
+        this.modalWindowSize = { width: 380, height: 350 }; // Larger size for comfortable settings viewing
+        
         this.initializeElements();
         this.loadData();
         this.loadJiraSettings();
@@ -47,6 +51,10 @@ class TimeTracker {
             this.ticketTimes = data.ticketTimes || {};
             this.startTime = data.startTime;
             this.isRunning = data.isRunning || false;
+            
+            // Initialize original window size
+            this.originalWindowSize = await window.electronAPI.getWindowSize();
+            console.log('Original window size:', this.originalWindowSize);
             
             // Restore current ticket selection if exists
             if (data.currentTicket) {
@@ -306,15 +314,42 @@ class TimeTracker {
             document.getElementById('jiraProjects').value = settings.projects || 'HCMRH,HR';
             this.alwaysOnTopCheckbox.checked = alwaysOnTop;
             
+            // Store current window size if not already stored
+            if (!this.originalWindowSize) {
+                this.originalWindowSize = await window.electronAPI.getWindowSize();
+            }
+            
+            // Show modal first, then resize for smoother experience
             this.settingsModal.classList.remove('hidden');
+            
+            // Small delay before resizing to allow modal to render
+            setTimeout(async () => {
+                try {
+                    await window.electronAPI.resizeWindow(this.modalWindowSize.width, this.modalWindowSize.height);
+                } catch (error) {
+                    console.error('Error resizing window for modal:', error);
+                }
+            }, 50);
         } catch (error) {
             console.error('Error loading Jira settings:', error);
             this.settingsModal.classList.remove('hidden');
         }
     }
     
-    closeSettingsModal() {
+    async closeSettingsModal() {
         this.settingsModal.classList.add('hidden');
+        
+        // Small delay before resizing to allow modal to hide
+        setTimeout(async () => {
+            try {
+                // Resize window back to original size
+                if (this.originalWindowSize) {
+                    await window.electronAPI.resizeWindow(this.originalWindowSize[0], this.originalWindowSize[1]);
+                }
+            } catch (error) {
+                console.error('Error resizing window back to original size:', error);
+            }
+        }, 50);
     }
     
     async saveJiraSettings() {

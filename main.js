@@ -190,6 +190,27 @@ ipcMain.handle('get-always-on-top', () => {
   return store.get('alwaysOnTop', true);
 });
 
+// Window Resize Handlers
+ipcMain.handle('resize-window', (event, width, height) => {
+  if (mainWindow) {
+    const [currentWidth, currentHeight] = mainWindow.getSize();
+    const [x, y] = mainWindow.getPosition();
+    
+    // Keep the same position, just change size
+    mainWindow.setSize(width, height);
+    
+    // Optionally, you could center the window or adjust position
+    // mainWindow.setPosition(x, y);
+  }
+});
+
+ipcMain.handle('get-window-size', () => {
+  if (mainWindow) {
+    return mainWindow.getSize();
+  }
+  return [280, 160]; // Default size
+});
+
 ipcMain.handle('test-jira-connection', async (event, settings) => {
   try {
     const auth = Buffer.from(`${settings.email}:${settings.token}`).toString('base64');

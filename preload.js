@@ -19,5 +19,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Always on top setting
   setAlwaysOnTop: (alwaysOnTop) => ipcRenderer.invoke('set-always-on-top', alwaysOnTop),
-  getAlwaysOnTop: () => ipcRenderer.invoke('get-always-on-top')
+  getAlwaysOnTop: () => ipcRenderer.invoke('get-always-on-top'),
+  
+  // Window resizing
+  resizeWindow: (width, height) => ipcRenderer.invoke('resize-window', width, height),
+  getWindowSize: () => ipcRenderer.invoke('get-window-size')
 });
