@@ -15,5 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveJiraSettings: (settings) => ipcRenderer.invoke('save-jira-settings', settings),
   loadJiraSettings: () => ipcRenderer.invoke('load-jira-settings'),
   testJiraConnection: (settings) => ipcRenderer.invoke('test-jira-connection', settings),
-  syncJiraTickets: (settings) => ipcRenderer.invoke('sync-jira-tickets', settings)
+  syncJiraTickets: (settings) => ipcRenderer.invoke('sync-jira-tickets', settings),
+  
+  // Always on top setting
+  setAlwaysOnTop: (alwaysOnTop) => ipcRenderer.invoke('set-always-on-top', alwaysOnTop),
+  getAlwaysOnTop: () => ipcRenderer.invoke('get-always-on-top')
 });

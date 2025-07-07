@@ -32,6 +32,7 @@ class TimeTracker {
         this.closeSettings = document.getElementById('closeSettings');
         this.saveSettings = document.getElementById('saveSettings');
         this.testConnection = document.getElementById('testConnection');
+        this.alwaysOnTopCheckbox = document.getElementById('alwaysOnTop');
         
         console.log('notification element:', this.notification);
     }
@@ -67,11 +68,14 @@ class TimeTracker {
     async loadJiraSettings() {
         try {
             this.jiraSettings = await window.electronAPI.loadJiraSettings();
+            const alwaysOnTop = await window.electronAPI.getAlwaysOnTop();
+            
             console.log('Loaded Jira settings (without token):', { 
                 url: this.jiraSettings.url, 
                 email: this.jiraSettings.email,
                 projects: this.jiraSettings.projects 
             });
+            console.log('Always on top:', alwaysOnTop);
         } catch (error) {
             console.error('Error loading Jira settings:', error);
             this.jiraSettings = {};
@@ -293,12 +297,14 @@ class TimeTracker {
     async openSettings() {
         try {
             const settings = await window.electronAPI.loadJiraSettings();
+            const alwaysOnTop = await window.electronAPI.getAlwaysOnTop();
             
             // Pre-fill the form with saved settings
             document.getElementById('jiraUrl').value = settings.url || 'https://frontlinetechnologies.atlassian.net';
             document.getElementById('jiraEmail').value = settings.email || '';
             document.getElementById('jiraToken').value = settings.token || '';
             document.getElementById('jiraProjects').value = settings.projects || 'HCMRH,HR';
+            this.alwaysOnTopCheckbox.checked = alwaysOnTop;
             
             this.settingsModal.classList.remove('hidden');
         } catch (error) {
@@ -319,6 +325,8 @@ class TimeTracker {
             projects: document.getElementById('jiraProjects').value.trim()
         };
         
+        const alwaysOnTop = this.alwaysOnTopCheckbox.checked;
+        
         if (!settings.url || !settings.email || !settings.token) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
@@ -326,6 +334,7 @@ class TimeTracker {
         
         try {
             await window.electronAPI.saveJiraSettings(settings);
+            await window.electronAPI.setAlwaysOnTop(alwaysOnTop);
             this.showNotification('Settings saved successfully!', 'success');
             this.closeSettingsModal();
         } catch (error) {

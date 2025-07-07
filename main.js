@@ -8,12 +8,15 @@ const store = new Store();
 let mainWindow;
 
 function createWindow() {
+  // Get always on top setting (default to true for overlay behavior)
+  const alwaysOnTop = store.get('alwaysOnTop', true);
+  
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 280,
     height: 160,
     frame: false, // Remove window frame for overlay effect
-    alwaysOnTop: true, // Keep window on top
+    alwaysOnTop: alwaysOnTop, // Configurable always on top
     resizable: true,
     transparent: false,
     webPreferences: {
@@ -173,6 +176,18 @@ ipcMain.handle('save-jira-settings', (event, settings) => {
 
 ipcMain.handle('load-jira-settings', () => {
   return store.get('jiraSettings', {});
+});
+
+// Always On Top Setting Handlers
+ipcMain.handle('set-always-on-top', (event, alwaysOnTop) => {
+  store.set('alwaysOnTop', alwaysOnTop);
+  if (mainWindow) {
+    mainWindow.setAlwaysOnTop(alwaysOnTop);
+  }
+});
+
+ipcMain.handle('get-always-on-top', () => {
+  return store.get('alwaysOnTop', true);
 });
 
 ipcMain.handle('test-jira-connection', async (event, settings) => {
