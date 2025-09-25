@@ -215,7 +215,7 @@ ipcMain.handle('test-jira-connection', async (event, settings) => {
   try {
     const auth = Buffer.from(`${settings.email}:${settings.token}`).toString('base64');
     
-    const response = await axios.get(`${settings.url}/rest/api/2/myself`, {
+    const response = await axios.get(`${settings.url}/rest/api/3/myself`, {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Accept': 'application/json'
@@ -233,26 +233,42 @@ ipcMain.handle('test-jira-connection', async (event, settings) => {
   }
 });
 
+// Helper function to validate and build JQL query
+function buildJqlQuery(settings) {
+  // Build comprehensive JQL query for assigned tickets with configurable filters
+  const projects = settings.projects ? settings.projects.split(',').map(p => p.trim()).filter(p => p) : [];
+  const projectFilter = projects.length > 0 ? `project in (${projects.join(',')}) AND ` : '';
+  
+  // Allow multiple statuses - default to common "active work" statuses if not specified
+  const statuses = settings.statuses || 'In Progress,Development,Testing,Code Review';
+  const statusList = statuses.split(',').map(s => s.trim()).filter(s => s).map(s => `"${s}"`).join(',');
+  const statusFilter = statusList ? `status in (${statusList})` : 'status = "In Progress"';
+  
+  // Additional filters for better ticket targeting
+  const assigneeFilter = 'assignee = currentuser()';
+  const excludeClosedFilter = 'resolution = EMPTY'; // Only include unresolved tickets
+  
+  // Build the complete JQL query with proper filtering
+  return `${projectFilter}${assigneeFilter} AND ${statusFilter} AND ${excludeClosedFilter} ORDER BY updated DESC, created DESC`;
+}
+
 ipcMain.handle('sync-jira-tickets', async (event, settings) => {
   try {
     const auth = Buffer.from(`${settings.email}:${settings.token}`).toString('base64');
     
-    // Build JQL query for assigned tickets in specified projects that are "In Progress"
-    const projects = settings.projects.split(',').map(p => p.trim()).filter(p => p);
-    const projectFilter = projects.length > 0 ? `project in (${projects.join(',')}) AND ` : '';
-    const jql = `${projectFilter}assignee = currentuser() AND status = "In Progress" ORDER BY updated DESC`;
-    
+    const jql = buildJqlQuery(settings);
     console.log('Executing JQL:', jql);
     
-    const response = await axios.get(`${settings.url}/rest/api/2/search`, {
+    const response = await axios.get(`${settings.url}/rest/api/3/search/jql`, {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Accept': 'application/json'
       },
       params: {
         jql: jql,
-        fields: 'key,summary,status',
-        maxResults: 50
+        fields: 'key,summary,status,assignee,priority,issuetype',
+        maxResults: 100, // Increased to get more tickets
+        startAt: 0
       },
       timeout: 15000
     });
@@ -260,11 +276,14 @@ ipcMain.handle('sync-jira-tickets', async (event, settings) => {
     const tickets = response.data.issues.map(issue => ({
       key: issue.key,
       summary: issue.fields.summary,
-      status: issue.fields.status.name
+      status: issue.fields.status.name,
+      priority: issue.fields.priority?.name || 'None',
+      issueType: issue.fields.issuetype?.name || 'Task'
     }));
     
-    console.log(`Found ${tickets.length} tickets`);
-    return { success: true, tickets };
+    console.log(`Found ${tickets.length} tickets using JQL: ${jql}`);
+    console.log('Ticket details:', tickets.map(t => `${t.key} - ${t.status}`));
+    return { success: true, tickets, totalFound: response.data.total };
     
   } catch (error) {
     console.error('Jira sync failed:', error.message);
@@ -278,7 +297,6 @@ ipcMain.handle('sync-jira-tickets', async (event, settings) => {
 ipcMain.handle('replace-tickets', (event, newTickets) => {
   // Get existing data or create new object
   let data = store.get('timerData') || {};
-  console.log('Replacing tickets, current data:', data);
   
   // Preserve ticket times for tickets that still exist
   const existingTicketTimes = data.ticketTimes || {};
@@ -306,7 +324,6 @@ ipcMain.handle('replace-tickets', (event, newTickets) => {
   // Save the updated data
   store.set('timerData', data);
   
-  console.log('After replacing, stored data:', data);
   return data.tickets;
 });
 

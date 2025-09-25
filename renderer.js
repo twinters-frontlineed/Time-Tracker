@@ -312,6 +312,7 @@ class TimeTracker {
             document.getElementById('jiraEmail').value = settings.email || '';
             document.getElementById('jiraToken').value = settings.token || '';
             document.getElementById('jiraProjects').value = settings.projects || 'HCMRH,HR';
+            document.getElementById('jiraStatuses').value = settings.statuses || 'In Progress,Development,Testing,Code Review';
             this.alwaysOnTopCheckbox.checked = alwaysOnTop;
             
             // Store current window size if not already stored
@@ -357,7 +358,8 @@ class TimeTracker {
             url: document.getElementById('jiraUrl').value.trim(),
             email: document.getElementById('jiraEmail').value.trim(),
             token: document.getElementById('jiraToken').value.trim(),
-            projects: document.getElementById('jiraProjects').value.trim()
+            projects: document.getElementById('jiraProjects').value.trim(),
+            statuses: document.getElementById('jiraStatuses').value.trim()
         };
         
         const alwaysOnTop = this.alwaysOnTopCheckbox.checked;
@@ -383,7 +385,8 @@ class TimeTracker {
             url: document.getElementById('jiraUrl').value.trim(),
             email: document.getElementById('jiraEmail').value.trim(),
             token: document.getElementById('jiraToken').value.trim(),
-            projects: document.getElementById('jiraProjects').value.trim()
+            projects: document.getElementById('jiraProjects').value.trim(),
+            statuses: document.getElementById('jiraStatuses').value.trim()
         };
         
         if (!settings.url || !settings.email || !settings.token) {
@@ -447,6 +450,10 @@ class TimeTracker {
                     this.updateDisplay();
                     this.saveData();
                 }
+                
+                // Show success notification with details
+                const totalMessage = result.totalFound ? ` (${result.totalFound} total found)` : '';
+                this.showNotification(`Synced ${result.tickets.length} tickets${totalMessage}`, 'success', 2500);
                 
                 // Show success icon briefly
                 this.syncBtn.textContent = '✅';
